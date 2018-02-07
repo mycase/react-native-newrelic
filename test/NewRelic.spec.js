@@ -1,5 +1,6 @@
 require('jasmine-expect');
 const proxyquire = require('proxyquire');
+const moment = require('moment');
 
 const emptyFunction = () => {
   //
@@ -82,6 +83,67 @@ describe('NewRelic', () => {
     });
   });
 
+  describe('timeEvent', () => {
+    it('records starting times based on event name', () => {
+      const now = moment('2016-01-01').toDate();
+      jasmine.clock().mockDate(now);
+      const eventName = 'MyEvent';
+      expect(uut.startingTimes).toEqual(undefined);
+      uut.timeEvent(eventName);
+      expect(uut.startingTimes).not.toEqual(undefined);
+      expect(uut.startingTimes[eventName].toDate()).toEqual(now);
+    });
+  });
+
+  describe('send', () => {
+    it('adds duration to args if starting time present', () => {
+      const now = moment('2016-01-01').toDate();
+      jasmine.clock().mockDate(now);
+      const eventName = 'MyEvent';
+      spyOn(mockNewRelic, 'send');
+      uut.timeEvent(eventName);
+      expect(mockNewRelic.send).not.toHaveBeenCalled();
+      const later = moment(now).add(10, 's').toDate();
+      jasmine.clock().mockDate(later);
+      uut.send(eventName, {userId: 1});
+      expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
+      expect(mockNewRelic.send).toHaveBeenCalledWith(eventName, {userId: '1', duration: 10});
+    });
+
+    it('does not add duration to args if no starting time present', () => {
+      const eventName1 = 'MyEvent';
+      const eventName2 = 'MyOtherEvent';
+      spyOn(mockNewRelic, 'send');
+      uut.timeEvent(eventName1);
+      uut.send(eventName2, {userId: 1});
+      expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
+      expect(mockNewRelic.send).toHaveBeenCalledWith(eventName2, {userId: '1'});
+    });
+
+    it('removes the starting time of the sent event', () => {
+      const eventName = 'MyEvent';
+      expect(uut.startingTimes).toEqual(undefined);
+      uut.timeEvent(eventName);
+      expect(uut.startingTimes).not.toEqual(undefined);
+      expect(uut.startingTimes[eventName]).not.toBeNull();
+      uut.send(eventName);
+      expect(uut.startingTimes).not.toBeNull();
+      expect(uut.startingTimes[eventName]).toBeNull();
+    });
+
+    it('does not remove the starting time of a different event', () => {
+      const eventName1 = 'MyEvent';
+      const eventName2 = 'MyOtherEvent';
+      expect(uut.startingTimes).toEqual(undefined);
+      uut.timeEvent(eventName1);
+      expect(uut.startingTimes).not.toEqual(undefined);
+      expect(uut.startingTimes[eventName1]).not.toBeNull();
+      uut.send(eventName2);
+      expect(uut.startingTimes).not.toBeNull();
+      expect(uut.startingTimes[eventName1]).not.toBeNull();
+    });
+  });
+
   describe('attributes', () => {
     it('set a global attribute', () => {
       spyOn(mockNewRelic, 'setAttribute');
@@ -91,7 +153,7 @@ describe('NewRelic', () => {
           always: 'send-this-attribute'
         }
       });
-      
+
       uut.report('name', {inner: 123});
       expect(mockNewRelic.setAttribute).toHaveBeenCalledTimes(1);
       expect(mockNewRelic.setAttribute).toHaveBeenCalledWith('always', 'send-this-attribute');
@@ -106,7 +168,7 @@ describe('NewRelic', () => {
         _globalHandler: originalErrorHandler
       };
       const error = new Error('some-exception');
-      
+
       uut._reportUncaughtExceptions(errorUtils);
       errorUtils._globalHandler(error);
 
@@ -229,7 +291,7 @@ describe('NewRelic', () => {
       expect(mockNewRelic.nativeLog).toHaveBeenCalledWith('[JSConsole:Error] hello3');
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
     });
-    
+
     it('send consoles to logger with argument seperated by comma and cast to string', () => {
       spyOn(mockNewRelic, 'send');
       uut._overrideConsole();
