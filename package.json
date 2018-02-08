@@ -14,7 +14,8 @@
     "react-native": "*"
   },
   "dependencies": {
-    "lodash": "^4.11.1"
+    "lodash": "^4.11.1",
+    "moment": "^2.20.1"
   },
   "devDependencies": {
     "app-root-path": "latest",
@@ -31,9 +32,9 @@
     "eslint-plugin-react": "latest",
     "eslint-plugin-react-native": "latest",
     "jasmine": "latest",
+    "jasmine-expect": "latest",
     "jasmine-reporters": "latest",
     "jasmine-spec-reporter": "latest",
-    "jasmine-expect": "latest",
     "proxyquire": "latest"
   },
   "repository": {

@@ -1,10 +1,12 @@
 /* globals ErrorUtils, __DEV__ */
 import {NativeModules} from 'react-native';
 import * as _ from 'lodash';
+import moment from 'moment';
 
 const RNNewRelic = NativeModules.RNNewRelic;
 
 class NewRelic {
+
   init(config) {
     if (config.overrideConsole) {
       this._overrideConsole();
@@ -95,11 +97,26 @@ class NewRelic {
 
   send(name, args) {
     const nameStr = String(name);
-    const argsStr = {};
+    let argsStr = {};
     _.forEach(args, (value, key) => {
       argsStr[String(key)] = String(value);
     });
+    const startingTime = this.startingTimes ? this.startingTimes[name] : null;
+    if (startingTime) {
+      argsStr = {
+        ...argsStr,
+        duration: moment().diff(startingTime) / 1000
+      };
+      this.startingTimes[name] = null;
+    }
     RNNewRelic.send(nameStr, argsStr);
+  }
+
+  timeEvent(name) {
+    this.startingTimes = {
+      ...this.startingTimes,
+      [name]: moment()
+    };
   }
 }
 
