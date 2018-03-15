@@ -40,7 +40,7 @@ public class RNUtils {
                     hashMap.put(key, toHashMap(readableNativeMap.getMap(key)));
                     break;
                 case Array:
-                    hashMap.put(key, toArrayList(readableNativeMap.getArray(key)));
+                    hashMap.put(key, toArrayList((ReadableNativeArray)readableNativeMap.getArray(key)));
                     break;
                 default:
                     throw new IllegalArgumentException("Could not convert object with key: " + key + ".");
