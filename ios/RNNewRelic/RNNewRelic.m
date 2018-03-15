@@ -12,8 +12,8 @@
 
 RCT_EXPORT_MODULE();
 
-RCT_EXPORT_METHOD(send: (NSString*)name :(NSDictionary*)args){
-  [NewRelicAgent recordEvent:name attributes:args];
+RCT_EXPORT_METHOD(send:(NSString*)eventType name:(NSString*)name args:(NSDictionary*)args){
+  [NewRelicAgent recordCustomEvent:eventType name:name attributes:args];
 }
 
 
