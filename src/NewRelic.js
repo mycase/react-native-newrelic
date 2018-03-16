@@ -45,7 +45,7 @@ class NewRelic {
   _reportUncaughtExceptions(errorUtils = global.ErrorUtils) {
     const defaultHandler = errorUtils._globalHandler;
     errorUtils._globalHandler = (error) => {
-      this.send('JS:UncaughtException', {error, stack: error && error.stack});
+      this.send('Logs', 'JS:UncaughtException', {error, stack: error && error.stack});
       defaultHandler(error);
     };
   }
@@ -56,7 +56,7 @@ class NewRelic {
       rejectionTracking.enable({
         allRejections: true,
         onUnhandled: (id, error) => {
-          this.send('JS:UnhandledRejectedPromise', {error});
+          this.send('Logs', 'JS:UnhandledRejectedPromise', {error});
           this.nativeLog('[UnhandledRejectedPromise] ' + error);
         },
         onHandled: () => {
@@ -78,14 +78,14 @@ class NewRelic {
 
   sendConsole(type, args) {
     const argsStr = _.map(args, String).join(', ');
-    this.send('JSConsole', {consoleType: type, args: argsStr});
+    this.send('Logs', 'JSConsole', {consoleType: type, args: argsStr});
     if (type === 'error') {
       this.nativeLog('[JSConsole:Error] ' + argsStr);
     }
   }
 
   report(eventName, args) {
-    this.send(eventName, args);
+    this.send('Logs', eventName, args);
   }
 
   /*
@@ -95,7 +95,8 @@ class NewRelic {
     RNNewRelic.nativeLog(log);
   }
 
-  send(name, args) {
+  send(eventType, name, args) {
+    const eventTypeStr = String(eventType);
     const nameStr = String(name);
     let argsStr = {};
     _.forEach(args, (value, key) => {
@@ -109,7 +110,7 @@ class NewRelic {
       };
       this.startingTimes[name] = null;
     }
-    RNNewRelic.send(nameStr, argsStr);
+    RNNewRelic.send(eventTypeStr, nameStr, argsStr);
   }
 
   timeEvent(name) {

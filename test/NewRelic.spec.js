@@ -63,7 +63,7 @@ describe('NewRelic', () => {
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       uut.report('name', {inner: 'val'});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith('name', {inner: 'val'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'name', {inner: 'val'});
     });
 
     it('sends name as string', () => {
@@ -71,7 +71,7 @@ describe('NewRelic', () => {
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       uut.report(123, {inner: 'val'});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith('123', {inner: 'val'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', '123', {inner: 'val'});
     });
 
     it('sends args as string', () => {
@@ -79,7 +79,7 @@ describe('NewRelic', () => {
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       uut.report('name', {inner: 123});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith('name', {inner: '123'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'name', {inner: '123'});
     });
   });
 
@@ -99,46 +99,50 @@ describe('NewRelic', () => {
     it('adds duration to args if starting time present', () => {
       const now = moment('2016-01-01').toDate();
       jasmine.clock().mockDate(now);
+      const eventType = 'MyEventType';
       const eventName = 'MyEvent';
       spyOn(mockNewRelic, 'send');
       uut.timeEvent(eventName);
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       const later = moment(now).add(10, 's').toDate();
       jasmine.clock().mockDate(later);
-      uut.send(eventName, {userId: 1});
+      uut.send(eventType, eventName, {userId: 1});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith(eventName, {userId: '1', duration: 10});
+      expect(mockNewRelic.send).toHaveBeenCalledWith(eventType, eventName, {userId: '1', duration: 10});
     });
 
     it('does not add duration to args if no starting time present', () => {
+      const eventType = 'MyEventType';
       const eventName1 = 'MyEvent';
       const eventName2 = 'MyOtherEvent';
       spyOn(mockNewRelic, 'send');
       uut.timeEvent(eventName1);
-      uut.send(eventName2, {userId: 1});
+      uut.send(eventType, eventName2, {userId: 1});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith(eventName2, {userId: '1'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith(eventType, eventName2, {userId: '1'});
     });
 
     it('removes the starting time of the sent event', () => {
+      const eventType = 'MyEventType';
       const eventName = 'MyEvent';
       expect(uut.startingTimes).toEqual(undefined);
       uut.timeEvent(eventName);
       expect(uut.startingTimes).not.toEqual(undefined);
       expect(uut.startingTimes[eventName]).not.toBeNull();
-      uut.send(eventName);
+      uut.send(eventType, eventName);
       expect(uut.startingTimes).not.toBeNull();
       expect(uut.startingTimes[eventName]).toBeNull();
     });
 
     it('does not remove the starting time of a different event', () => {
+      const eventType = 'MyEventType';
       const eventName1 = 'MyEvent';
       const eventName2 = 'MyOtherEvent';
       expect(uut.startingTimes).toEqual(undefined);
       uut.timeEvent(eventName1);
       expect(uut.startingTimes).not.toEqual(undefined);
       expect(uut.startingTimes[eventName1]).not.toBeNull();
-      uut.send(eventName2);
+      uut.send(eventType, eventName2);
       expect(uut.startingTimes).not.toBeNull();
       expect(uut.startingTimes[eventName1]).not.toBeNull();
     });
@@ -174,7 +178,7 @@ describe('NewRelic', () => {
 
       expect(originalErrorHandler).toHaveBeenCalledWith(error);
       expect(originalErrorHandler).toHaveBeenCalledTimes(1);
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JS:UncaughtException', {
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JS:UncaughtException', {
         error: String(error),
         stack: error.stack
       });
@@ -252,7 +256,7 @@ describe('NewRelic', () => {
 
     it('sends consoles to logger with name JSConsole', () => {
       let called = null;
-      mockNewRelic.send = (name) => {
+      mockNewRelic.send = (eventType, name) => {
         called = name;
       };
       uut._overrideConsole();
@@ -270,11 +274,11 @@ describe('NewRelic', () => {
       uut._overrideConsole();
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       console.log('hello1');
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JSConsole', {consoleType: 'log', args: 'hello1'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JSConsole', {consoleType: 'log', args: 'hello1'});
       console.warn('hello2');
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JSConsole', {consoleType: 'warn', args: 'hello2'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JSConsole', {consoleType: 'warn', args: 'hello2'});
       console.error('hello3');
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JSConsole', {consoleType: 'error', args: 'hello3'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JSConsole', {consoleType: 'error', args: 'hello3'});
       expect(mockNewRelic.send).toHaveBeenCalledTimes(3);
     });
 
@@ -287,7 +291,7 @@ describe('NewRelic', () => {
       uut._overrideConsole();
       console.error('hello3');
 
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JSConsole', {consoleType: 'error', args: 'hello3'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JSConsole', {consoleType: 'error', args: 'hello3'});
       expect(mockNewRelic.nativeLog).toHaveBeenCalledWith('[JSConsole:Error] hello3');
       expect(mockNewRelic.send).toHaveBeenCalledTimes(1);
     });
@@ -297,7 +301,7 @@ describe('NewRelic', () => {
       uut._overrideConsole();
       expect(mockNewRelic.send).not.toHaveBeenCalled();
       console.log('hello', 'world', 123, null, {inner: 1});
-      expect(mockNewRelic.send).toHaveBeenCalledWith('JSConsole', {consoleType: 'log', args: 'hello, world, 123, null, [object Object]'});
+      expect(mockNewRelic.send).toHaveBeenCalledWith('Logs', 'JSConsole', {consoleType: 'log', args: 'hello, world, 123, null, [object Object]'});
     });
   });
 });
