@@ -111,6 +111,20 @@ describe('NewRelic', () => {
       expect(mockNewRelic.send).toHaveBeenCalledWith(eventType, eventName, {userId: '1', duration: 10});
     });
 
+    it('does not send event if duration is over 500 seconds', () => {
+      const now = moment('2016-01-01').toDate();
+      jasmine.clock().mockDate(now);
+      const eventType = 'MyEventType';
+      const eventName = 'MyEvent';
+      spyOn(mockNewRelic, 'send');
+      uut.timeEvent(eventName);
+      expect(mockNewRelic.send).not.toHaveBeenCalled();
+      const later = moment(now).add(501, 's').toDate();
+      jasmine.clock().mockDate(later);
+      uut.send(eventType, eventName, {userId: 1});
+      expect(mockNewRelic.send).not.toHaveBeenCalled();
+    });
+
     it('does not add duration to args if no starting time present', () => {
       const eventType = 'MyEventType';
       const eventName1 = 'MyEvent';
