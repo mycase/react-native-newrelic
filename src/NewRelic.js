@@ -6,7 +6,6 @@ import moment from 'moment';
 const RNNewRelic = NativeModules.RNNewRelic;
 
 class NewRelic {
-
   init(config) {
     if (config.overrideConsole) {
       this._overrideConsole();
@@ -104,9 +103,14 @@ class NewRelic {
     });
     const startingTime = this.startingTimes ? this.startingTimes[name] : null;
     if (startingTime) {
+      const duration = moment().diff(startingTime) / 1000;
+      // Timeout of 500 seconds to account for timeEvent outliers
+      if (duration > 500) {
+        return;
+      }
       argsStr = {
         ...argsStr,
-        duration: moment().diff(startingTime) / 1000
+        duration
       };
       this.startingTimes[name] = null;
     }
