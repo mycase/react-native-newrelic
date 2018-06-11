@@ -99,7 +99,11 @@ class NewRelic {
     const nameStr = String(name);
     let argsStr = {};
     _.forEach(args, (value, key) => {
-      argsStr[String(key)] = value;
+      if (typeof value === 'number') {
+        argsStr[String(key)] = Number(value);
+      } else {
+        argsStr[String(key)] = String(value);
+      }
     });
     const startingTime = this.startingTimes ? this.startingTimes[name] : null;
     if (startingTime) {
